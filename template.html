@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>starforge · GitHub Star 榜单浏览器</title>
+<meta name="author" content="晨星">
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --border:#e3e6ea; --border-2:#eef0f3;
+  --text:#16181d; --text-2:#5b6470; --text-3:#8b94a1;
+  --accent:#2f6feb; --accent-soft:#eaf1fe;
+  --star:#f2b01e; --up:#d63f3f; --down:#1f9254;
+  --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding:0 0 64px;
+}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+/* ---------- header ---------- */
+header{
+  background:linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%);
+  border-bottom:1px solid var(--border);padding:32px 0 26px;margin-bottom:22px;
+}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:26px;font-weight:700;letter-spacing:-.4px}
+.brand .dot{color:var(--star)}
+.byline{font-size:13px;color:var(--text-3)}
+.byline b{color:var(--text-2);font-weight:600}
+.sub{margin-top:8px;color:var(--text-2);font-size:14px;max-width:760px}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0 0}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.stat .k{font-size:11px;color:var(--text-3);letter-spacing:.6px;text-transform:uppercase;font-weight:600}
+.stat .v{font-size:23px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;margin-top:3px}
+.stat .u{font-size:12px;color:var(--text-3);font-weight:500;margin-left:3px;font-family:inherit}
+
+/* ---------- controls ---------- */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.controls{padding:14px 16px;margin-bottom:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row+.row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+input[type=text],input[type=password],select{
+  font:inherit;font-size:13px;color:var(--text);background:#fff;
+  border:1px solid var(--border);border-radius:8px;padding:7px 11px;outline:none;
+}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#q{flex:1;min-width:220px}
+label.f{font-size:12px;color:var(--text-3);font-weight:600;margin-right:2px}
+.chip{
+  font-size:12.5px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);
+  background:#fff;color:var(--text-2);cursor:pointer;transition:.15s;white-space:nowrap;user-select:none;
+}
+.chip:hover{border-color:#c9d3e0;background:#fafbfc}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.chip .n{opacity:.65;margin-left:5px;font-size:11px;font-family:var(--mono)}
+.btn{
+  font:inherit;font-size:12.5px;padding:6px 13px;border-radius:8px;border:1px solid var(--border);
+  background:#fff;color:var(--text-2);cursor:pointer;transition:.15s;white-space:nowrap;
+}
+.btn:hover{border-color:#c9d3e0;background:#fafbfc}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#2560d4}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.spacer{flex:1}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1fr 296px;gap:16px;align-items:start}
+@media(max-width:960px){
+  .grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+
+/* ---------- repo card ---------- */
+.list{display:flex;flex-direction:column}
+.item{display:flex;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-2);transition:.12s}
+.item:last-child{border-bottom:none}
+.item:hover{background:#fafbfc}
+.rank{
+  flex:0 0 34px;height:34px;border-radius:8px;background:#f2f4f7;color:var(--text-3);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;
+}
+.item:nth-child(1) .rank,.item:nth-child(2) .rank,.item:nth-child(3) .rank{background:#fff6e0;color:#b7791f}
+.body{min-width:0;flex:1}
+.title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.owner{color:var(--text-3);font-size:13.5px}
+.slash{color:var(--border);font-size:13.5px}
+.repo{font-size:15px;font-weight:650;color:var(--accent);word-break:break-word}
+.repo:hover{text-decoration:underline}
+.desc{font-size:13px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:7px;font-size:11.5px;color:var(--text-3);align-items:center}
+.tag{display:inline-flex;align-items:center;gap:4px}
+.lang-dot{width:8px;height:8px;border-radius:50%;background:#8b94a1;display:inline-block}
+.cat{background:var(--accent-soft);color:var(--accent);padding:1.5px 7px;border-radius:5px;font-weight:600;font-size:11px}
+.metric{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.stars{font-family:var(--mono);font-size:14.5px;font-weight:700;color:var(--text)}
+.stars small{color:var(--star);font-size:12px;margin-right:2px}
+.forks{font-size:11.5px;color:var(--text-3);font-family:var(--mono)}
+.fav{
+  border:1px solid var(--border);background:#fff;border-radius:6px;width:26px;height:24px;
+  cursor:pointer;font-size:13px;line-height:1;color:#c8ced8;display:flex;align-items:center;justify-content:center;
+}
+.fav:hover{color:var(--star);border-color:#e8cf94}
+.fav.on{color:var(--star);border-color:#e8cf94;background:#fffbf0}
+
+/* ---------- table view ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);
+  font-weight:700;padding:10px 12px;border-bottom:1px solid var(--border);background:#fafbfc;position:sticky;top:0;cursor:pointer;
+  white-space:nowrap;
+}
+th:hover{color:var(--text)}
+td{padding:9px 12px;border-bottom:1px solid var(--border-2);vertical-align:top}
+tbody tr:hover{background:#fafbfc}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+td .nm{color:var(--accent);font-weight:600}
+
+/* ---------- sidebar ---------- */
+.side{display:flex;flex-direction:column;gap:16px}
+.card{padding:15px 16px}
+.card h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.card h3 .cnt{margin-left:auto;font-size:11px;color:var(--text-3);font-weight:600;font-family:var(--mono)}
+.bar{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:7px}
+.bar .lb{flex:0 0 86px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{flex:1;height:7px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(90deg,#4f8bf5,#2f6feb);border-radius:4px}
+.bar .vl{flex:0 0 46px;text-align:right;font-family:var(--mono);color:var(--text);font-weight:600;font-size:11px}
+.favrow{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--border-2)}
+.favrow:last-of-type{border-bottom:none}
+.favrow .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.favrow .rm{color:var(--text-3);cursor:pointer;font-size:14px;line-height:1;padding:0 3px}
+.favrow .rm:hover{color:var(--up)}
+.empty{color:var(--text-3);font-size:12.5px;padding:6px 0}
+.hint{font-size:11.5px;color:var(--text-3);line-height:1.55;margin-top:10px}
+pre.out{
+  background:#fbfcfd;border:1px solid var(--border);border-radius:8px;padding:10px;max-height:230px;overflow:auto;
+  font-family:var(--mono);font-size:11px;color:var(--text-2);white-space:pre-wrap;margin-top:10px;
+}
+.badge{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:#eef1f5;color:var(--text-2);font-weight:600}
+.badge.ok{background:#e6f6ee;color:#14713f}
+.badge.err{background:#fdeaea;color:#a82828}
+footer{margin-top:26px;text-align:center;font-size:12px;color:var(--text-3);line-height:1.8}
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);
+  background:#16181d;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;
+  opacity:0;pointer-events:none;transition:.22s;z-index:99;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.count-bar{padding:10px 16px;font-size:12.5px;color:var(--text-3);border-bottom:1px solid var(--border-2);background:#fafbfc;border-radius:var(--radius) var(--radius) 0 0}
+.count-bar b{color:var(--text);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <h1>starforge <span class="dot">★</span></h1>
+      <div class="byline">GitHub Star 榜单浏览器 · <b id="snapDate">—</b> 快照 · By <b>晨星</b></div>
+    </div>
+    <p class="sub">从 GitHub Search API 实拉的 <b id="hdCount">—</b> 个高星开源仓库快照，横跨机器学习、大模型、Agent、RAG、推理部署、CV、数据工程、开发者工具、前端九大赛道。支持本地筛选、收藏清单建设与 Markdown / JSON 导出。</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel controls">
+    <div class="row">
+      <input type="text" id="q" placeholder="搜索仓库名 / 组织 / 描述…  例如：transformers、agent、vector">
+      <select id="lang"><option value="">全部语言</option></select>
+      <select id="sort">
+        <option value="stars">按 Star 排序</option>
+        <option value="forks">按 Fork 排序</option>
+        <option value="updated">按更新时间</option>
+        <option value="name">按名称</option>
+      </select>
+      <button class="btn" id="viewBtn">切表格视图</button>
+      <button class="btn" id="favOnly">只看收藏</button>
+    </div>
+    <div class="row" id="cats"></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="count-bar">命中 <b id="hitCount">0</b> 个仓库 · 合计 <b id="hitStars">0</b> ★</div>
+        <div id="main"></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="panel card">
+        <h3>赛道分布 <span class="cnt" id="catCnt"></span></h3>
+        <div id="catChart"></div>
+      </div>
+
+      <div class="panel card">
+        <h3>我的收藏清单 <span class="cnt" id="favCnt">0</span></h3>
+        <div id="favList"><div class="empty">还没有收藏。点右侧 ☆ 加入清单。</div></div>
+        <div class="row" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
+          <button class="btn" id="expMd">导出 Markdown</button>
+          <button class="btn" id="expJson">导出 JSON</button>
+          <button class="btn" id="clrFav">清空</button>
+        </div>
+        <pre class="out" id="outBox" hidden></pre>
+      </div>
+
+      <div class="panel card">
+        <h3>实时拉取我的 Starred</h3>
+        <div class="row" style="gap:6px">
+          <input type="password" id="tok" placeholder="GitHub Token（可选）" style="flex:1;min-width:0">
+          <button class="btn primary" id="fetchBtn">拉取</button>
+        </div>
+        <div id="liveBox"></div>
+        <p class="hint">Token 仅在本页面内存中用于直连 <code>api.github.com</code>，不上传、不落盘。也可不填 Token，直接按用户名读取公开 starred 列表。</p>
+        <div class="row" style="margin-top:6px;gap:6px">
+          <input type="text" id="uname" placeholder="用户名（如 CJX0712）" style="flex:1;min-width:0">
+          <button class="btn" id="fetchPub">读公开列表</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    数据来源：GitHub REST / Search API · 快照生成于 <span id="ftDate">—</span> · 榜单为静态快照，实时数据请在右上「实时拉取」获取<br>
+    starforge · 作者 晨星 · 单文件 HTML，零外部依赖，可离线运行
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="seed">__SEED_DATA__</script>
+<script>
+(function(){
+  "use strict";
+  const LANG_COLOR = {
+    Python:"#3572A5", TypeScript:"#3178c6", JavaScript:"#f1e05a", "C++":"#f34b7d",
+    Go:"#00ADD8", Rust:"#dea584", Java:"#b07219", "C":"#555555", "C#":"#178600",
+    Ruby:"#701516", PHP:"#4F5D95", Shell:"#89e051", HTML:"#e34c26", CSS:"#563d7c",
+    Jupyter:"#DA5B0B", "Jupyter Notebook":"#DA5B0B", Kotlin:"#A97BFF", Swift:"#F05138",
+    Svelte:"#ff3e00", Vue:"#41b883", Dart:"#00B4AB", Lua:"#000080", Zig:"#ec915c",
+    Elixir:"#6e4a7e", Scala:"#c22d40", OCaml:"#ef7a08", Roff:"#ecdebe", Nix:"#7e7eff",
+    MDX:"#fcb32c", Makefile:"#427819", CMake:"#DA3434", JupyterNotebook:"#DA5B0B", Unknown:"#8b94a1"
+  };
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const SEED = JSON.parse($("#seed").textContent);
+  const REPOS = SEED.repos, META = SEED.meta;
+
+  const fmt = n => n.toLocaleString("en-US");
+  const kfmt = n => n >= 1000 ? (n/1000).toFixed(n>=10000?0:1).replace(/\.0$/,"") + "k" : String(n);
+  const ago = d => {
+    if(!d) return "—";
+    const diff = Math.floor((Date.now() - Date.parse(d)) / 86400000);
+    if(diff <= 0) return "今天";
+    if(diff === 1) return "昨天";
+    if(diff < 30) return diff + " 天前";
+    if(diff < 365) return Math.floor(diff/30) + " 个月前";
+    const y = Math.floor(diff/365); return y + " 年前";
+  };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  /* ---------- state ---------- */
+  const S = { q:"", cat:"", lang:"", sort:"stars", view:"card", favOnly:false };
+  let FAV = new Set();
+  try{ FAV = new Set(JSON.parse(localStorage.getItem("starforge_fav") || "[]")); }catch(e){}
+  const saveFav = () => localStorage.setItem("starforge_fav", JSON.stringify([...FAV]));
+
+  let toastT;
+  function toast(msg){
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("show"), 1900);
+  }
+
+  /* ---------- header & stats ---------- */
+  $("#snapDate").textContent = META.generated_at;
+  $("#ftDate").textContent = META.generated_at;
+  $("#hdCount").textContent = META.total;
+  const langs = Object.keys(META.lang_count);
+  $("#stats").innerHTML = [
+    ["收录仓库", META.total, "个"],
+    ["累计 Stars", kfmt(META.total_stars), ""],
+    ["覆盖赛道", META.cats.length, "类"],
+    ["主力语言", META.lang_count ? langs[0] : "—", ""],
+    ["万星项目", REPOS.filter(r=>r.stars>=10000).length, "个"]
+  ].map(([k,v,u]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${v}<span class="u">${u}</span></div></div>`).join("");
+
+  /* ---------- category chips ---------- */
+  $("#cats").innerHTML =
+    `<span class="chip ${S.cat===""?"on":""}" data-cat="">全部<span class="n">${META.total}</span></span>` +
+    META.cats.map(c => `<span class="chip" data-cat="${esc(c)}">${esc(c)}<span class="n">${META.cat_count[c]||0}</span></span>`).join("");
+  $$("#cats .chip").forEach(el => el.onclick = () => {
+    S.cat = el.dataset.cat;
+    $$("#cats .chip").forEach(x=>x.classList.toggle("on", x===el));
+    render();
+  });
+
+  /* ---------- language select ---------- */
+  const langCount = {};
+  REPOS.forEach(r => langCount[r.lang] = (langCount[r.lang]||0)+1);
+  Object.entries(langCount).sort((a,b)=>b[1]-a[1]).forEach(([l,n]) => {
+    const o = document.createElement("option"); o.value = l; o.textContent = `${l} (${n})`; $("#lang").appendChild(o);
+  });
+
+  /* ---------- category chart ---------- */
+  function renderChart(){
+    const rows = META.cats.map(c => [c, META.cat_count[c]||0]).sort((a,b)=>b[1]-a[1]);
+    const max = Math.max(...rows.map(r=>r[1]), 1);
+    $("#catCnt").textContent = rows.length + " 类";
+    $("#catChart").innerHTML = rows.map(([c,n]) =>
+      `<div class="bar"><span class="lb" title="${esc(c)}">${esc(c)}</span>
+       <span class="track"><span class="fill" style="width:${(n/max*100).toFixed(1)}%"></span></span>
+       <span class="vl">${n}</span></div>`).join("");
+  }
+
+  /* ---------- filter ---------- */
+  function filtered(){
+    let rs = REPOS.slice();
+    if(S.cat) rs = rs.filter(r => r.cats.includes(S.cat));
+    if(S.lang) rs = rs.filter(r => r.lang === S.lang);
+    if(S.favOnly) rs = rs.filter(r => FAV.has(r.name));
+    if(S.q.trim()){
+      const q = S.q.trim().toLowerCase();
+      rs = rs.filter(r => (r.name + " " + r.desc + " " + r.owner).toLowerCase().includes(q));
+    }
+    const cmp = {
+      stars: (a,b)=>b.stars-a.stars,
+      forks: (a,b)=>b.forks-a.forks,
+      updated: (a,b)=> (b.updated||"").localeCompare(a.updated||""),
+      name: (a,b)=> a.name.localeCompare(b.name),
+    }[S.sort];
+    return rs.sort(cmp);
+  }
+
+  /* ---------- render list ---------- */
+  function render(){
+    const rs = filtered();
+    const totStars = rs.reduce((s,r)=>s+r.stars,0);
+    $("#hitCount").textContent = rs.length;
+    $("#hitStars").textContent = fmt(totStars);
+
+    if(!rs.length){
+      $("#main").innerHTML = `<div style="padding:48px 16px;text-align:center;color:var(--text-3);font-size:13.5px">没有命中任何仓库，换个筛选条件试试。</div>`;
+      return;
+    }
+    if(S.view === "card"){
+      $("#main").innerHTML = `<div class="list">` + rs.map((r,i) => {
+        const c = LANG_COLOR[r.lang] || LANG_COLOR.Unknown;
+        return `<div class="item">
+          <div class="rank">${i+1}</div>
+          <div class="body">
+            <div class="title">
+              <span class="owner">${esc(r.owner)}</span><span class="slash">/</span>
+              <a class="repo" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.repo)}</a>
+              <span class="cat">${esc(r.cat)}</span>
+            </div>
+            <div class="desc">${esc(r.desc || "（无描述）")}</div>
+            <div class="tags">
+              <span class="tag"><span class="lang-dot" style="background:${c}"></span>${esc(r.lang)}</span>
+              <span class="tag">⑂ ${fmt(r.forks)}</span>
+              <span class="tag">${esc(r.license)}</span>
+              <span class="tag">更新于 ${ago(r.updated)}</span>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="stars"><small>★</small>${fmt(r.stars)}</div>
+            <div class="forks">${kfmt(r.stars)} ★</div>
+            <button class="fav ${FAV.has(r.name)?"on":""}" data-n="${esc(r.name)}" title="加入收藏清单">${FAV.has(r.name)?"★":"☆"}</button>
+          </div>
+        </div>`;
+      }).join("") + `</div>`;
+    } else {
+      $("#main").innerHTML = `<div style="max-height:760px;overflow:auto"><table>
+        <thead><tr>
+          <th>#</th><th>仓库</th><th>赛道</th><th>语言</th>
+          <th style="text-align:right">Stars</th><th style="text-align:right">Forks</th><th>更新</th><th></th>
+        </tr></thead><tbody>` + rs.map((r,i) => `<tr>
+          <td class="num" style="color:var(--text-3)">${i+1}</td>
+          <td><a class="nm" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a></td>
+          <td style="color:var(--text-2);white-space:nowrap">${esc(r.cat)}</td>
+          <td style="color:var(--text-2);white-space:nowrap">${esc(r.lang)}</td>
+          <td class="num">${fmt(r.stars)}</td>
+          <td class="num" style="color:var(--text-3)">${fmt(r.forks)}</td>
+          <td style="color:var(--text-3);white-space:nowrap;font-size:12px">${ago(r.updated)}</td>
+          <td><button class="fav ${FAV.has(r.name)?"on":""}" data-n="${esc(r.name)}">${FAV.has(r.name)?"★":"☆"}</button></td>
+        </tr>`).join("") + `</tbody></table></div>`;
+    }
+    $$(".fav").forEach(b => b.onclick = toggleFav);
+  }
+
+  /* ---------- favorites ---------- */
+  function toggleFav(){
+    const n = this.dataset.n;
+    if(FAV.has(n)){ FAV.delete(n); } else { FAV.add(n); }
+    saveFav(); renderFav(); render();
+    toast(FAV.has(n) ? "已加入收藏清单" : "已移出收藏清单");
+  }
+  function renderFav(){
+    $("#favCnt").textContent = FAV.size;
+    const list = REPOS.filter(r => FAV.has(r.name)).sort((a,b)=>b.stars-a.stars);
+    $("#favList").innerHTML = list.length
+      ? list.map(r => `<div class="favrow">
+          <a class="n" href="${esc(r.url)}" target="_blank" rel="noopener" title="${esc(r.name)}">${esc(r.name)}</a>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text-3)">${kfmt(r.stars)}</span>
+          <span class="rm" data-n="${esc(r.name)}">×</span></div>`).join("")
+      : `<div class="empty">还没有收藏。点右侧 ☆ 加入清单。</div>`;
+    $$("#favList .rm").forEach(x => x.onclick = () => { FAV.delete(x.dataset.n); saveFav(); renderFav(); render(); });
+  }
+
+  /* ---------- export ---------- */
+  $("#expMd").onclick = () => {
+    const list = REPOS.filter(r => FAV.has(r.name)).sort((a,b)=>b.stars-a.stars);
+    if(!list.length){ toast("收藏清单为空"); return; }
+    const byCat = {};
+    list.forEach(r => (byCat[r.cat] = byCat[r.cat] || []).push(r));
+    let md = `# GitHub Star 收藏清单\n\n> 共 ${list.length} 个仓库 · 合计 ${fmt(list.reduce((s,r)=>s+r.stars,0))} ★\n> 生成时间：${new Date().toLocaleString("zh-CN")} · By 晨星\n`;
+    Object.entries(byCat).forEach(([cat, rs]) => {
+      md += `\n## ${cat}\n\n| 仓库 | Stars | 语言 | 说明 |\n|---|---|---|---|\n`;
+      rs.forEach(r => md += `| [${r.name}](${r.url}) | ${fmt(r.stars)} | ${r.lang} | ${(r.desc||"").slice(0,60).replace(/\|/g,"/")} |\n`);
+    });
+    showOut(md); toast("Markdown 已生成");
+  };
+  $("#expJson").onclick = () => {
+    const list = REPOS.filter(r => FAV.has(r.name));
+    if(!list.length){ toast("收藏清单为空"); return; }
+    showOut(JSON.stringify({ generated_at:new Date().toISOString().slice(0,10), author:"晨星",
+      count:list.length, total_stars:list.reduce((s,r)=>s+r.stars,0), repos:list }, null, 2));
+    toast("JSON 已生成");
+  };
+  $("#clrFav").onclick = () => {
+    if(!FAV.size){ toast("清单已为空"); return; }
+    FAV.clear(); saveFav(); renderFav(); render(); $("#outBox").hidden = true; toast("已清空收藏");
+  };
+  function showOut(txt){
+    const box = $("#outBox"); box.hidden = false; box.textContent = txt;
+    navigator.clipboard && navigator.clipboard.writeText(txt).then(()=>toast("已复制到剪贴板")).catch(()=>{});
+  }
+
+  /* ---------- live fetch ---------- */
+  async function pull(url, useTok){
+    const h = { Accept:"application/vnd.github+json" };
+    if(useTok) h.Authorization = "Bearer " + $("#tok").value.trim();
+    const res = await fetch(url, { headers:h });
+    if(!res.ok) throw new Error(`HTTP ${res.status}：${res.status===401?"Token 无效或已过期":res.status===403?"触发 API 速率限制":"请求失败"}`);
+    return res.json();
+  }
+  $("#fetchBtn").onclick = async () => {
+    const t = $("#tok").value.trim();
+    if(!t){ toast("请先填入 Token"); return; }
+    $("#liveBox").innerHTML = `<span class="badge">拉取中…</span>`;
+    try{
+      const d = await pull("https://api.github.com/user/starred?per_page=100&page=1", true);
+      $("#liveBox").innerHTML = `<span class="badge ok">已认证拉取成功</span><pre class="out" style="margin-top:8px">${
+        d.slice(0,60).map(r=>`★ ${String(r.stargazers_count).padStart(7)}  ${r.full_name}`).join("\n") || "（该账号还没有 starred 仓库）"
+      }${d.length>=100?"\n…（仅显示前 100 条）":""}</pre>`;
+    }catch(e){ $("#liveBox").innerHTML = `<span class="badge err">${e.message}</span>`; }
+  };
+  $("#fetchPub").onclick = async () => {
+    const u = $("#uname").value.trim();
+    if(!u){ toast("请输入用户名"); return; }
+    $("#liveBox").innerHTML = `<span class="badge">拉取中…</span>`;
+    try{
+      const d = await pull(`https://api.github.com/users/${encodeURIComponent(u)}/starred?per_page=60`, false);
+      $("#liveBox").innerHTML = `<span class="badge ok">${u} 的 starred：${d.length} 条</span><pre class="out" style="margin-top:8px">${
+        d.slice(0,60).map(r=>`★ ${String(r.stargazers_count).padStart(7)}  ${r.full_name}`).join("\n") || "（无 starred 仓库）"
+      }</pre>`;
+    }catch(e){ $("#liveBox").innerHTML = `<span class="badge err">${e.message}</span>`; }
+  };
+
+  /* ---------- events ---------- */
+  let deb;
+  $("#q").oninput = e => { clearTimeout(deb); deb = setTimeout(()=>{ S.q = e.target.value; render(); }, 200); };
+  $("#lang").onchange = e => { S.lang = e.target.value; render(); };
+  $("#sort").onchange = e => { S.sort = e.target.value; render(); };
+  $("#viewBtn").onclick = () => {
+    S.view = S.view === "card" ? "table" : "card";
+    $("#viewBtn").textContent = S.view === "card" ? "切表格视图" : "切卡片视图";
+    render();
+  };
+  $("#favOnly").onclick = e => {
+    S.favOnly = !S.favOnly;
+    e.target.classList.toggle("primary", S.favOnly);
+    render();
+  };
+
+  renderChart(); renderFav(); render();
+})();
+</script>
+</body>
+</html>
