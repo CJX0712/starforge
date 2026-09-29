@@ -166,7 +166,7 @@ footer{margin-top:26px;text-align:center;font-size:12px;color:var(--text-3);line
       <h1>starforge <span class="dot">★</span></h1>
       <div class="byline">GitHub Star 榜单浏览器 · <b id="snapDate">—</b> 快照 · By <b>晨星</b></div>
     </div>
-    <p class="sub">从 GitHub Search API 实拉的 <b id="hdCount">—</b> 个高星开源仓库快照，横跨机器学习、大模型、Agent、RAG、推理部署、CV、数据工程、开发者工具、前端九大赛道。支持本地筛选、收藏清单建设与 Markdown / JSON 导出。</p>
+    <p class="sub">从 GitHub Search API 实拉的 <b id="hdCount">—</b> 个高星开源仓库快照，横跨<span id="catLine">…</span>大赛道。支持本地筛选、收藏清单建设与 Markdown / JSON 导出。</p>
     <div class="stats" id="stats"></div>
   </div>
 </header>
@@ -284,6 +284,7 @@ footer{margin-top:26px;text-align:center;font-size:12px;color:var(--text-3);line
   $("#snapDate").textContent = META.generated_at;
   $("#ftDate").textContent = META.generated_at;
   $("#hdCount").textContent = META.total;
+  $("#catLine").textContent = META.cats.join(" / ");
   const langs = Object.keys(META.lang_count);
   $("#stats").innerHTML = [
     ["收录仓库", META.total, "个"],
